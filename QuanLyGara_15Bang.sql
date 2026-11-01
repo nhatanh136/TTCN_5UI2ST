@@ -1,0 +1,176 @@
+-- HE THONG QUAN LY GARA - DUNG CHINH XAC 15 BANG
+-- MySQL 8.0+
+-- LUU Y: Script xoa database QuanLyGara cu va tao lai.
+-- Hay sao luu du lieu truoc khi chay neu can giu lai.
+
+DROP DATABASE IF EXISTS QuanLyGara;
+CREATE DATABASE QuanLyGara CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE QuanLyGara;
+
+CREATE TABLE VaiTro (
+ MaVaiTro INT AUTO_INCREMENT PRIMARY KEY,
+ TenVaiTro VARCHAR(50) NOT NULL UNIQUE,
+ MoTa VARCHAR(255)
+) ENGINE=InnoDB;
+
+CREATE TABLE TaiKhoan (
+ MaTaiKhoan INT AUTO_INCREMENT PRIMARY KEY,
+ MaVaiTro INT NOT NULL,
+ TenDangNhap VARCHAR(50) NOT NULL UNIQUE,
+ MatKhau VARCHAR(255) NOT NULL,
+ Email VARCHAR(100) UNIQUE,
+ TrangThai ENUM('Hoat dong','Khoa') NOT NULL DEFAULT 'Hoat dong',
+ FOREIGN KEY (MaVaiTro) REFERENCES VaiTro(MaVaiTro)
+) ENGINE=InnoDB;
+
+CREATE TABLE KhachHang (
+ MaKhachHang INT AUTO_INCREMENT PRIMARY KEY,
+ MaTaiKhoan INT UNIQUE,
+ HoTen VARCHAR(100) NOT NULL,
+ SoDienThoai VARCHAR(15) NOT NULL,
+ Email VARCHAR(100),
+ DiaChi VARCHAR(255),
+ FOREIGN KEY (MaTaiKhoan) REFERENCES TaiKhoan(MaTaiKhoan) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE XeOTo (
+ MaXe INT AUTO_INCREMENT PRIMARY KEY,
+ MaKhachHang INT NOT NULL,
+ BienSoXe VARCHAR(20) NOT NULL UNIQUE,
+ HangXe VARCHAR(50) NOT NULL,
+ DongXe VARCHAR(50),
+ NamSanXuat YEAR,
+ SoKhung VARCHAR(50) UNIQUE,
+ FOREIGN KEY (MaKhachHang) REFERENCES KhachHang(MaKhachHang)
+) ENGINE=InnoDB;
+
+CREATE TABLE KyThuatVien (
+ MaKTV INT AUTO_INCREMENT PRIMARY KEY,
+ HoTen VARCHAR(100) NOT NULL,
+ SoDienThoai VARCHAR(15) NOT NULL,
+ ChuyenMon VARCHAR(100),
+ TrangThai ENUM('Dang lam','Tam nghi','Nghi viec') NOT NULL DEFAULT 'Dang lam'
+) ENGINE=InnoDB;
+
+CREATE TABLE LichHen (
+ MaLichHen INT AUTO_INCREMENT PRIMARY KEY,
+ MaKhachHang INT NOT NULL,
+ MaXe INT NOT NULL,
+ NgayHen DATE NOT NULL,
+ GioHen TIME NOT NULL,
+ NoiDung TEXT,
+ TrangThai ENUM('Cho xac nhan','Da xac nhan','Da tiep nhan','Da huy') NOT NULL DEFAULT 'Cho xac nhan',
+ FOREIGN KEY (MaKhachHang) REFERENCES KhachHang(MaKhachHang),
+ FOREIGN KEY (MaXe) REFERENCES XeOTo(MaXe)
+) ENGINE=InnoDB;
+
+CREATE TABLE DichVu (
+ MaDichVu INT AUTO_INCREMENT PRIMARY KEY,
+ TenDichVu VARCHAR(150) NOT NULL,
+ MoTa TEXT,
+ DonGia DECIMAL(12,2) NOT NULL DEFAULT 0,
+ TrangThai ENUM('Dang ap dung','Ngung ap dung') NOT NULL DEFAULT 'Dang ap dung',
+ CHECK (DonGia >= 0)
+) ENGINE=InnoDB;
+
+CREATE TABLE PhuTung (
+ MaPhuTung INT AUTO_INCREMENT PRIMARY KEY,
+ TenPhuTung VARCHAR(150) NOT NULL,
+ DonViTinh VARCHAR(30) NOT NULL,
+ DonGia DECIMAL(12,2) NOT NULL DEFAULT 0,
+ SoLuongTon INT NOT NULL DEFAULT 0,
+ CHECK (DonGia >= 0),
+ CHECK (SoLuongTon >= 0)
+) ENGINE=InnoDB;
+
+CREATE TABLE PhieuSuaChua (
+ MaPhieuSC INT AUTO_INCREMENT PRIMARY KEY,
+ MaKhachHang INT NOT NULL,
+ MaXe INT NOT NULL,
+ MaLichHen INT UNIQUE,
+ NgayTiepNhan DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ TinhTrangBanDau TEXT,
+ YeuCauSuaChua TEXT,
+ TrangThai ENUM('Moi tiep nhan','Cho duyet bao gia','Dang sua chua','Hoan thanh','Da giao xe','Da huy') NOT NULL DEFAULT 'Moi tiep nhan',
+ FOREIGN KEY (MaKhachHang) REFERENCES KhachHang(MaKhachHang),
+ FOREIGN KEY (MaXe) REFERENCES XeOTo(MaXe),
+ FOREIGN KEY (MaLichHen) REFERENCES LichHen(MaLichHen) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE ChiTietSuaChua (
+ MaChiTietSC INT AUTO_INCREMENT PRIMARY KEY,
+ MaPhieuSC INT NOT NULL,
+ MaDichVu INT NOT NULL,
+ SoLuong DECIMAL(10,2) NOT NULL DEFAULT 1,
+ DonGia DECIMAL(12,2) NOT NULL,
+ ThanhTien DECIMAL(12,2) NOT NULL,
+ FOREIGN KEY (MaPhieuSC) REFERENCES PhieuSuaChua(MaPhieuSC) ON DELETE CASCADE,
+ FOREIGN KEY (MaDichVu) REFERENCES DichVu(MaDichVu),
+ CHECK (SoLuong > 0),
+ CHECK (DonGia >= 0),
+ CHECK (ThanhTien >= 0)
+) ENGINE=InnoDB;
+
+CREATE TABLE ChiTietPhuTung (
+ MaChiTietPT INT AUTO_INCREMENT PRIMARY KEY,
+ MaPhieuSC INT NOT NULL,
+ MaPhuTung INT NOT NULL,
+ SoLuong DECIMAL(10,2) NOT NULL,
+ DonGia DECIMAL(12,2) NOT NULL,
+ ThanhTien DECIMAL(12,2) NOT NULL,
+ FOREIGN KEY (MaPhieuSC) REFERENCES PhieuSuaChua(MaPhieuSC) ON DELETE CASCADE,
+ FOREIGN KEY (MaPhuTung) REFERENCES PhuTung(MaPhuTung),
+ CHECK (SoLuong > 0),
+ CHECK (DonGia >= 0),
+ CHECK (ThanhTien >= 0)
+) ENGINE=InnoDB;
+
+CREATE TABLE BaoGia (
+ MaBaoGia INT AUTO_INCREMENT PRIMARY KEY,
+ MaPhieuSC INT NOT NULL,
+ NgayBaoGia DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ TongTien DECIMAL(12,2) NOT NULL DEFAULT 0,
+ TrangThai ENUM('Cho duyet','Da duyet','Tu choi') NOT NULL DEFAULT 'Cho duyet',
+ GhiChu VARCHAR(500),
+ FOREIGN KEY (MaPhieuSC) REFERENCES PhieuSuaChua(MaPhieuSC),
+ CHECK (TongTien >= 0)
+) ENGINE=InnoDB;
+
+CREATE TABLE PhanCong (
+ MaPhanCong INT AUTO_INCREMENT PRIMARY KEY,
+ MaPhieuSC INT NOT NULL,
+ MaKTV INT NOT NULL,
+ NgayPhanCong DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ NoiDungCongViec VARCHAR(500),
+ TrangThai ENUM('Cho thuc hien','Dang thuc hien','Hoan thanh') NOT NULL DEFAULT 'Cho thuc hien',
+ FOREIGN KEY (MaPhieuSC) REFERENCES PhieuSuaChua(MaPhieuSC) ON DELETE CASCADE,
+ FOREIGN KEY (MaKTV) REFERENCES KyThuatVien(MaKTV)
+) ENGINE=InnoDB;
+
+CREATE TABLE HoaDon (
+ MaHoaDon INT AUTO_INCREMENT PRIMARY KEY,
+ MaPhieuSC INT NOT NULL UNIQUE,
+ NgayLap DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ TongTien DECIMAL(12,2) NOT NULL DEFAULT 0,
+ TrangThai ENUM('Chua thanh toan','Thanh toan mot phan','Da thanh toan') NOT NULL DEFAULT 'Chua thanh toan',
+ FOREIGN KEY (MaPhieuSC) REFERENCES PhieuSuaChua(MaPhieuSC),
+ CHECK (TongTien >= 0)
+) ENGINE=InnoDB;
+
+CREATE TABLE ThanhToan (
+ MaThanhToan INT AUTO_INCREMENT PRIMARY KEY,
+ MaHoaDon INT NOT NULL,
+ NgayThanhToan DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ SoTien DECIMAL(12,2) NOT NULL,
+ PhuongThuc ENUM('Tien mat','Chuyen khoan','The') NOT NULL,
+ GhiChu VARCHAR(500),
+ FOREIGN KEY (MaHoaDon) REFERENCES HoaDon(MaHoaDon),
+ CHECK (SoTien > 0)
+) ENGINE=InnoDB;
+
+INSERT INTO VaiTro (TenVaiTro, MoTa) VALUES
+('Admin','Quan tri he thong'),
+('NhanVien','Nhan vien gara'),
+('KhachHang','Khach hang su dung dich vu');
+
+SHOW TABLES;
